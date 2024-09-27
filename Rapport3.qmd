@@ -1,0 +1,225 @@
+---
+title: "Rapport 3"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Rapport 3
+
+**Forfattar: Lars Øvrebø**
+
+### Introdukjon
+
+Eg fekk i oppgåve å skrive ein rapport med svar på ulike spørsmål om temaet å trekke sluttninger frå statistiske modeller, og statistisk styrke. Oppgaven skulle inneholde simuleringer med mine tolkninger og forklaringer av resultatene.
+
+### Metode
+
+I denne raporten er det gjennomført simulasjoner av to datasett. Eit datasett med populasjonseffekt og eit datasett uten, begge datasettene inneholder to utvalgsstørrelser på 8 og 40. Det er laget to histogram basert på hvert datasett som viser simulering av begge utvalgsstørrelsene. Frå datasettet med populasjonseffekt ble det kalkulert standardavvik, gjennomsnittlig standardfeil (SE), statistisk styrke og anntal studier som vil vere statistisk signifikante ved signifikansnivå på 5%. Frå datasettet uten populasjonseffekt ble det kalkulert anntal studier som vil gi "falsk positiv" effekt ved et signifikansnivå på 5%.
+
+### Resultat
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+#| code-fold: true
+
+
+library(tidyverse)
+
+set.seed(1)
+population <- rnorm(1000000, mean = 1.5, sd = 3)
+
+
+samp1 <- data.frame(y = sample(population, 8, replace = FALSE))
+
+samp2 <- data.frame(y = sample(population, 40, replace = FALSE))
+
+
+m1 <- lm(y ~ 1, data = samp1)
+m2 <- lm(y ~ 1, data = samp2)
+
+summary(m1)
+summary(m2)
+
+```
+
+1\) Frå utvalga m1 (n = 8) og m2 (n = 40) er det estimert 1,84 og 1,5642 som gjennomsnittsverdi av en variabel x, SE på 1,251 og 0,4774, t-verdi på 1,47 og 3,276, p-verdi på 0,185 og 0,002. Estimatet her er en effekt frå ein simulasjon. SE er standard feil som forteller om variasjonen frå estimatet til gjennomsnittet i populasjonen. En lav SE indikerer at det er liten variasjon og dermed mer sansynlig at estimatet er nerme populasjonsgjennomsnittet og er representativt for populasjonen. T-verdien forteller at estimatet ligger 1,47 for m1 og 3,276 for m2 standardfeil frå nullhypotesen reknet ut ifrå estimatet/SE. m2 studien sin t-verdi er høgare enn m1 studien som forteller at det er større sansynlighet for å vere statistisk signifikant. P-verdien forteller at m1 ikkje er statistisk signifikant, mens m2 er signifikant og kan dermed kaste en nullhypotese, med eit aksept om at 5% av studiene gjort på samme måte vil vere feil. P-verdiene på 0,185 og 0,002 blir berekna frå t-verdiane og forteller om kor ofte vi vil kunne sjå ein lik eller meir ekstrem t-verdi om nullhypotesen er sann. For eksempel ved 1000 repiterte studier vil 185 m1 studier og 2 m2 studier kunne få lik eller meir ekstrem t-verdi om nullhypotesen er sann.
+
+2\) De ulike resultatene i de to studiene vil vere påvirka av ulikt anntall på utvalget (n). I m1 studien vil det vere større påvirkning på verdiene ved avvik eller ekstreme verdier enn m2 studien. Statistisk styrke påvirkes av utvalgsstørrelsen der en studie med større utvalg f.eks m2 vil ha større statistisk styrke enn m1.
+
+3\) I en t-distrubusjon ønker vi å sjå på heile figuren inkludert det skraverte områdene som representerer p-verdien for å få oversikt og se etter endring. Endten det er endring i en postiv eller negativ retning så kan vi ved hjelp av det skraverte området i nedre og øvre hale av t-fordelingen undersøke.......
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+#| code-fold: true
+
+# Create data frames to store the model estimates
+results_8 <- data.frame(estimate = rep(NA, 1000), 
+                      se = rep(NA, 1000), 
+                      pval = rep(NA, 1000), 
+                      n = 8)  
+
+results_40 <- data.frame(estimate = rep(NA, 1000), 
+                      se = rep(NA, 1000), 
+                      pval = rep(NA, 1000), 
+                      n = 40)
+
+# A for loop used to sample 1000 studies, each iteration (i) will draw a new sample
+# from the population. 
+
+for(i in 1:1000) {
+  
+  # Draw a sample 
+  samp1 <- data.frame(y = sample(population, 8, replace = FALSE))
+  samp2 <- data.frame(y = sample(population, 40, replace = FALSE))
+
+  # Model the data
+  m1 <- lm(y ~ 1, data = samp1)
+  m2 <- lm(y ~ 1, data = samp2)
+  
+  # Extract values from the models
+  results_8[i, 1] <- coef(summary(m1))[1, 1]
+  results_8[i, 2] <- coef(summary(m1))[1, 2]
+  results_8[i, 3] <- coef(summary(m1))[1, 4]
+
+  results_40[i, 1] <- coef(summary(m2))[1, 1]
+  results_40[i, 2] <- coef(summary(m2))[1, 2]
+  results_40[i, 3] <- coef(summary(m2))[1, 4]
+  
+  
+}
+
+
+# Save the results in a combined data frame
+
+results <- bind_rows(results_8, results_40)
+
+
+
+```
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+#| code-fold: true
+
+
+sd_est40 <- sd(results_40$estimate)
+sd_est8 <- sd(results_8$estimate)
+
+mean_se40 <- mean(results_40$se)
+mean_se8 <- mean(results_8$se)
+
+```
+
+4\)
+
+Standardavviket til studien med utvalgsstørrelse på 8 er 1,05, mens standardavviket for studien med utvalgsstørrelsen på 40 er 0,47. Det gjennomsnittlige standardfeilen for studiene med 8 og 40 er 1,03 og 0,47.
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+#| code-fold: true
+
+results %>%
+  ggplot(aes(pval)) + 
+  geom_histogram() +
+  facet_wrap(~ n
+             
+            )
+```
+
+5\) I histogrammenne ser vi forventa p-verdier frå studier med utvalgsstørrelse på 8 og frå studier med utvalgsstørrelse på 40. Det kjem tydelig fram at studier med utvalgsstørrelser på 8 vil ha større spreding av p-verdier samt mindre signifikante resultater enn studiene med utvalgsstørrelse på 40 som vil få stor annsamling av lav p-verdi og flere signifikante resultater. Basert på dette vil det bli gjor mer type to feil i studiene med lav utvalgsstørrelse i form av at nullhypotesen ikkje forkastes selv om den ikkje representerer populasjonen.
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+#| code-fold: true
+
+results %>%
+  filter(pval < 0.05) %>%
+  group_by(n) %>%
+  summarise(sig_results = n())
+```
+
+Ved eit p-verdi signifikansnivå på 0,05 vil 227 av 1000 studier med utvalgsstørrelse på 8 og oppgi ein statistisk signifikant effekt. Studier med utvalgsstørrelse på 40 vil derimot ha 865 av 1000 studier som oppgir statistisk signifikant effekt.
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+#| code-fold: true
+
+library(pwr)
+
+pwr.t.test(n = 40, sig.level = 0.05, d = 1.5/3, type = "one.sample")
+pwr.t.test(n = 8, sig.level = 0.05, d = 1.5/3, type = "one.sample")
+```
+
+Frå ein one-sample t test bereknes styrken til studier med utvalgsstørrelse på 40 til å vere 0,869 ved et p-verdi signifikansnivå satt til 0,05. Om vi bytter utvalgsstørrelsen til 8 og beholder samme signifikansnivå vil styrken til studiene vere 0,232.
+
+```{r}
+#| warning: FALSE
+#| message: FALSE
+#| code-fold: true
+
+population <- rnorm(1000000, mean = 0, sd = 3)
+
+
+# Create data frames to store the model estimates
+results_8 <- data.frame(estimate = rep(NA, 1000), 
+                      se = rep(NA, 1000), 
+                      pval = rep(NA, 1000), 
+                      n = 8)  
+
+results_40 <- data.frame(estimate = rep(NA, 1000), 
+                      se = rep(NA, 1000), 
+                      pval = rep(NA, 1000), 
+                      n = 40)
+
+# A for loop used to sample 1000 studies, each iteration (i) will draw a new sample
+# from the population. 
+
+for(i in 1:1000) {
+  
+  # Draw a sample 
+  samp1 <- data.frame(y = sample(population, 8, replace = FALSE))
+  samp2 <- data.frame(y = sample(population, 40, replace = FALSE))
+
+  # Model the data
+  m1 <- lm(y ~ 1, data = samp1)
+  m2 <- lm(y ~ 1, data = samp2)
+  
+  # Extract values from the models
+  results_8[i, 1] <- coef(summary(m1))[1, 1]
+  results_8[i, 2] <- coef(summary(m1))[1, 2]
+  results_8[i, 3] <- coef(summary(m1))[1, 4]
+
+  results_40[i, 1] <- coef(summary(m2))[1, 1]
+  results_40[i, 2] <- coef(summary(m2))[1, 2]
+  results_40[i, 3] <- coef(summary(m2))[1, 4]
+  
+  
+}
+
+
+# Save the results in a combined data frame
+
+results_null <- bind_rows(results_8, results_40)
+
+results_null %>%
+  ggplot(aes(pval)) + 
+  geom_histogram() +
+  facet_wrap(~ n
+             
+            )
+
+```
+
+Når populasjonseffekten er null og med eit signifikansnivå på 5% vil 5% av gjentatte studier gi et "falskt positivt" resultat.
+
+### Konklusjon
+
+Etter simulasjon av to utvalgsstørrelser på 8 og 40 frå datasett med og uten populasjonseffekt ser eg at det er store forskjeller i kor ofte estimatene treffer populasjonen. Studiene med større utvalg har flere signifikante målinger, mindre påvirkning frå avvik eller ekstreme variabler og har større statistisk styrke som gjer at studiane sansynligvis vil vere representativt for populasjonen enn studiane med mindre utvalg.
